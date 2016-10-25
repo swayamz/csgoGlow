@@ -408,16 +408,15 @@ void readPlayerPointAndHealth(task_t task, task_t taskSelf, mach_vm_address_t im
         if (playerTeamNum == 0) {
             continue;
         }
+        if (health == 0){
+            health = 100;
+        }
         
         //Team glow (team will glow light blue)
         if (playerTeamNum == iTeamNum) {
             Color color = {(0 / 255), (255 / 255), (255 / 255), 0.4f}; //remove this line if you don't want a team glow
             applyGlowEffect(task, startAddress, glowIndex, color);  //remove this line if you don't want a team glow
             continue;
-        }
-        
-        if (health == 0){
-            health = 100;
         }
         
         // here we create a variable that will hold the amount of kills a player has.
@@ -433,19 +432,11 @@ void readPlayerPointAndHealth(task_t task, task_t taskSelf, mach_vm_address_t im
         // this works even if they take over a bot.
         // if multiple enemy players are tied for the highscore, they all get the new glow. 
         
-        if(highscore < 2){
-            //if highscore is less than 2, everyone glows normal green->yellow->red
-            Color color = {float((100 - health) / 100.0), float((health) / 100.0), 0.0f, 0.55f};
-            applyGlowEffect(task, startAddress, glowIndex, color);
-        }else if(highscore <= playerKills){
-            // whoever has the highest score will glow blue->purple->pink.
-            Color color = {float((100 - health) / 100.0),  (0 / 255), float((health) / 100.0), 0.55f};
-            applyGlowEffect(task, startAddress, glowIndex, color);
-        }else{
-            // all other players glow green->yellow->red
-            Color color = {float((100 - health) / 100.0), float((health) / 100.0), 0.0f, 0.55f};
-            applyGlowEffect(task, startAddress, glowIndex, color);
-        }
+       Color color = {float((100 - health) / 100.0), float((health) / 100.0), 0.0f, 0.55f};
+       if((highscore <= playerKills) && (highscore > 2)){
+            color = {float((100 - health) / 100.0),  (0 / 255), float((health) / 100.0), 0.55f};
+       }
+       applyGlowEffect(task, startAddress, glowIndex, color);
     }
 }
 
