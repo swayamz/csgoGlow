@@ -2,7 +2,7 @@
 
 I have reposted this with new features. This version includes a team glow, and also assigns a different color glow to the enemy with the most kills. It works even if they take over a bot.
 
-**Thanks to @gabsens and @e-retailer’s contribution to this project**
+**Thanks to @gabsens @e-retailer @aKalisch and @iseekwonderful for their contributions to this project**
 
 ### Hello World
 if you are newbie and have never use Xcode, go and watch @gabsens’s [Video at Youtube](https://www.youtube.com/watch?v=AefIiBg2HKU)
@@ -17,9 +17,7 @@ Maybe, depends on Gaben
 
 ### More features?
 No! We won't implement aimbot, bunnyhop or other stuff to it. This is just a native CS:GO Wallhack.
-
-## About `Internal`:
-sorry for another delay, there some new trouble.
+I might attempt to impliment no-flash. 
 
 ## Licenses
 [AGPLv3](https://www.gnu.org/licenses/agpl-3.0.html)
