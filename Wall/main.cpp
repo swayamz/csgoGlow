@@ -431,7 +431,7 @@ void readPlayerPointAndHealth(task_t task, task_t taskSelf, mach_vm_address_t im
        
         // below we will give the enemy with a highest score a different glow color. 
         // this works even if they take over a bot.
-        // if multiple enemy players are tied for the highscore, they get the new glow. 
+        // if multiple enemy players are tied for the highscore, they all get the new glow. 
         
         if(highscore < 2){
             //if highscore is less than 2, everyone glows normal green->yellow->red
