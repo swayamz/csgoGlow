@@ -1,5 +1,7 @@
 # Project csgoGlow, a 100% FREE and OPEN-SOURCE wallhack for OSX
 
+I have reposted this with new features. This version includes a team glow, and also assigns a different color glow to the enemy with the most kills. It works even if they take over a bot.
+
 **Thanks to @gabsens and @e-retailer’s contribution to this project**
 
 ### Hello World
