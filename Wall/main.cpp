@@ -12,8 +12,8 @@
 /**
  *
  * @toggle key : CTRL + ALT (OPT) + V
- * Change modifier at line 226
- * Change keycode at line 227
+ * Change modifier at line 233
+ * Change keycode at line 234
  *
  */
 
@@ -27,6 +27,13 @@ uint64_t LocalPlayerBase    = 0x51dc668;
 uint64_t playerBase         = 0x5158f68;
 
 uint64_t m_iGlowIndex       = 0xAC10;
+
+// score variables:
+// first is the offset for the scoreboard
+// next we create a global variable for the highscore which will be updated later
+uint64_t scoreBase          = 0x50E2310;
+int highscore               = 0;
+
 bool statBool = true;
 
 bool ctr = false;
@@ -226,7 +233,7 @@ CGEventRef keyBoardCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef 
     if (ctr && alt) {
         if (keycode == keyCodeForKeyString("v")) {
             states = !states;
-            printf("State Changed! %s\n", states ? "ON" : "OFF");
+            //printf("State Changed! %s\n", states ? "ON" : "OFF");
         }
     }
     
@@ -377,10 +384,10 @@ void applyGlowEffect(task_t task, mach_vm_address_t glowStartAddress, int glowOb
 }
 
 void readPlayerPointAndHealth(task_t task, task_t taskSelf, mach_vm_address_t imgbase, mach_vm_address_t startAddress, int iTeamNum) {
-    uint64_t memoryAddress;
+    uint64_t memoryAddress, scoreAddress;
     int glowIndex;
-    //    printf("----------updated----------\n");
-    for (int i = 0; i < 60; i++) {
+    
+    for (int i = 0; i < 20; i++) {
         int playerTeamNum;
         if (Utils::ReadMemAndDeAllocate<uint64_t>(task, taskSelf, imgbase + playerBase + 0x20 * i, &memoryAddress) == -1) {
             continue;
@@ -398,35 +405,80 @@ void readPlayerPointAndHealth(task_t task, task_t taskSelf, mach_vm_address_t im
         if (Utils::ReadMemAndDeAllocate<int>(task, taskSelf, memoryAddress + 0x128, &playerTeamNum)) {
             continue;
         }
-        if (playerTeamNum == iTeamNum || playerTeamNum == 0) {
-            continue;
-        }
         if (playerTeamNum == 0) {
             continue;
         }
-        //        bool dormant;
-        //        if (Utils::ReadMemAndDeAllocate(task, taskSelf, memoryAddress + 0xee, &dormant)) {
-        //            if (dormant == 0) {
-        //                continue;
-        //            }
-        //        }
-        //printf("The memory address read is 0x%x player %i health is %i iteam is %i playerteam is %i \n", memoryAddress, glowIndex, health, iTeamNum, playerTeamNum);
+        
+        //Team glow (team will glow light blue)
+        if (playerTeamNum == iTeamNum) {
+            Color color = {(0 / 255), (255 / 255), (255 / 255), 0.4f}; //remove this line if you don't want a team glow
+            applyGlowEffect(task, startAddress, glowIndex, color);  //remove this line if you don't want a team glow
+            continue;
+        }
+        
         if (health == 0){
             health = 100;
         }
         
-        Color color = {float((100 - health) / 100.0), float((health) / 100.0), 0.0f, 0.8f};
-        applyGlowEffect(task, startAddress, glowIndex, color);
+        // here we create a variable that will hold the amount of kills a player has.
+        int playerKills;
+       
+        // we read the scoreboard and check each player's amount of kills
+        // we don't need to worry about possibly checking teammates
+        // becasue they were already skipped over by code above this
+        Utils::ReadMemAndDeAllocate(task, current_task(), imgbase + scoreBase, &scoreAddress);
+        Utils::ReadMemAndDeAllocate(task, current_task(), scoreAddress + 0x1288 + 0x4 * i, &playerKills);
+       
+        // below we will give the enemy with a highest score a different glow color. 
+        // this works even if they take over a bot.
+        // if multiple enemy players are tied for the highscore, they get the new glow. 
+        
+        if(highscore < 2){
+            //if highscore is less than 2, everyone glows normal green->yellow->red
+            Color color = {float((100 - health) / 100.0), float((health) / 100.0), 0.0f, 0.55f};
+            applyGlowEffect(task, startAddress, glowIndex, color);
+        }else if(highscore <= playerKills){
+            // whoever has the highest score will glow blue->purple->pink.
+            Color color = {float((100 - health) / 100.0),  (0 / 255), float((health) / 100.0), 0.55f};
+            applyGlowEffect(task, startAddress, glowIndex, color);
+        }else{
+            // all other players glow green->yellow->red
+            Color color = {float((100 - health) / 100.0), float((health) / 100.0), 0.0f, 0.55f};
+            applyGlowEffect(task, startAddress, glowIndex, color);
+        }
     }
 }
 
 int testLocalPlayerAddress(task_t csgo, uint64_t clientBase) {
-    uint64_t playerAddress;
-    int health, iTeamNum;
+    uint64_t playerAddress, scoreAddress;;
+    int health, iTeamNum, pKills, pTeamNum, pConnected;
     Utils::ReadMemAndDeAllocate(csgo, current_task(), clientBase + LocalPlayerBase, &playerAddress);
     Utils::ReadMemAndDeAllocate(csgo, current_task(), playerAddress + 0x134, &health);
     Utils::ReadMemAndDeAllocate(csgo, current_task(), playerAddress + 0x128, &iTeamNum);
-    //printf("I team is %i and team %i\n", iTeamNum, health);
+    
+    //set the highscore to zero
+    //then check every player for a new high score
+    highscore = 0;
+   
+    for (int x = 0; x < 20; x++) {
+        Utils::ReadMemAndDeAllocate(csgo, current_task(), clientBase + scoreBase, &scoreAddress);
+        Utils::ReadMemAndDeAllocate(csgo, current_task(), scoreAddress + 0x1288 + 0x4 * x, &pKills);
+        Utils::ReadMemAndDeAllocate(csgo, current_task(), scoreAddress + 0x15D8 + 0x4 * x, &pTeamNum);
+        Utils::ReadMemAndDeAllocate(csgo, current_task(), scoreAddress + 0x1591 + 0x1 * x, &pConnected);
+         
+        // CSGO saves score info for players even if they leave
+        // so we must check if the player is connected
+        if(pConnected == 0){
+            continue;
+        }
+        
+        // checks to make sure the player is on the opposite team
+        if((iTeamNum == 2 && pTeamNum == 3) || (iTeamNum == 3 && pTeamNum == 2)){
+            if(highscore < pKills){
+                highscore = pKills;
+            }
+        }
+    }
     return iTeamNum;
 }
 
@@ -467,5 +519,4 @@ int main(int argc, const char * argv[]) {
         }
         usleep(7800);
     }
-    
 }
