@@ -428,9 +428,10 @@ void readPlayerPointAndHealth(task_t task, task_t taskSelf, mach_vm_address_t im
         Utils::ReadMemAndDeAllocate(task, current_task(), imgbase + scoreBase, &scoreAddress);
         Utils::ReadMemAndDeAllocate(task, current_task(), scoreAddress + 0x1288 + 0x4 * i, &playerKills);
        
-        // below we will give the enemy with a highest score a different glow color. 
-        // this works even if they take over a bot.
+        // below we will give the enemy with the highest score a different glow color. 
+        // it only turns on once a player has 3 kills.
         // if multiple enemy players are tied for the highscore, they all get the new glow. 
+        // this works even if they take over a bot.
         
        Color color = {float((100 - health) / 100.0), float((health) / 100.0), 0.0f, 0.55f};
        if((highscore <= playerKills) && (highscore > 2)){
